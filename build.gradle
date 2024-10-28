@@ -1,0 +1,117 @@
+plugins {
+    id 'groovy'
+    id 'org.springframework.boot' version '2.7.18'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id("org.openapi.generator") version "5.3.1" apply(true)
+}
+
+openApiGenerate {
+    generatorName.set("spring")
+
+    generateModelTests.set(true)
+    generateApiTests.set(true)
+    generateApiDocumentation.set(true)
+    logToStderr.set(false)
+    validateSpec.set(true)
+    enablePostProcessFile.set(false)
+    skipValidateSpec.set(false)
+
+    generateModelDocumentation.set(false)
+    skipValidateSpec.set(true)
+
+    inputSpec.set("$rootDir/api_specification/api.yml")
+    outputDir.set("$buildDir/generated")
+    invokerPackage.set("v.examples.stub.mock.spy.openapi.invoke")
+    apiPackage.set("v.examples.stub.mock.spy.openapi.api")
+    modelPackage.set("v.examples.stub.mock.spy.openapi.model")
+
+    getConfigOptions().put("annotationLibrary", "swagger2");
+    getConfigOptions().put("dateLibrary", "java8");
+    getConfigOptions().put("disallowAdditionalPropertiesIfNotPresent", "false");
+    getConfigOptions().put("enumUnknownDefaultCase", "false");
+    getConfigOptions().put("interfaceOnly", "true");
+    getConfigOptions().put("legacyDiscriminatorBehavior", "false");
+    getConfigOptions().put("library", "spring-boot");
+    getConfigOptions().put("openApiNullable", "false");
+//    getConfigOptions().put("reactive", "true");
+    getConfigOptions().put("requestMappingMode", "api_interface");
+    getConfigOptions().put("useBeanValidation", "true");
+//    getConfigOptions().put("useSpringBoot3", "true");
+    getConfigOptions().put("useTags", "true");
+    getConfigOptions().put("skipDefaultInterface", "true");
+
+    additionalProperties.set([
+            'useJakartaValidation' : 'true' // This instructs the generator to use Jakarta validation
+    ])
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "$buildDir/generated/src/main/java"
+        }
+    }
+}
+
+group = 'v.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('snippetsDir', file("build/generated-snippets"))
+}
+
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.data:spring-data-commons'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation("javax.validation:validation-api:2.0.1.Final")
+    implementation("javax.annotation:javax.annotation-api:1.3.2")
+
+    implementation("io.springfox:springfox-swagger2:3.0.0")
+    implementation 'io.springfox:springfox-boot-starter:3.0.0'
+    implementation 'io.springfox:springfox-swagger-ui:3.0.0'
+
+    implementation 'javax.servlet:javax.servlet-api:4.0.1'
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'jakarta.validation:jakarta.validation-api'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+//    implementation 'org.apache.groovy:groovy'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+}
+
+tasks.named('test') {
+    outputs.dir snippetsDir
+    useJUnitPlatform()
+}
+
+tasks.jar {
+    dependsOn(tasks.openApiGenerate)
+}
+tasks.compileJava {
+    dependsOn(tasks.openApiGenerate)
+}
